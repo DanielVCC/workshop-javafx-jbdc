@@ -1,8 +1,11 @@
 package gui;
 
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -17,6 +20,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import model.entities.Seller;
@@ -26,16 +30,34 @@ import model.services.SellerService;
 public class SellerFormController implements Initializable {
 
 	private Seller formSeller;
-	
+
 	private SellerService service;
-	
+
 	private List<DataChangeListener> dataChangeListeners = new ArrayList<>();
-	
+
 	@FXML
 	private TextField txtId;
 
 	@FXML
+	private TextField txtEmail;
+
+	@FXML
+	private DatePicker dpBirthDate;
+
+	@FXML
+	private TextField txtBaseSalary;
+
+	@FXML
 	private TextField txtName;
+
+	@FXML
+	private Label labelErrorEmail;
+
+	@FXML
+	private Label labelErrorBirthDate;
+
+	@FXML
+	private Label labelErrorBaseSalary;
 
 	@FXML
 	private Label labelErrorName;
@@ -45,15 +67,15 @@ public class SellerFormController implements Initializable {
 
 	@FXML
 	private Button btCancel;
-	
+
 	public void setSeller(Seller dp) {
 		this.formSeller = dp;
 	}
-	
+
 	public void setSellerService(SellerService service) {
 		this.service = service;
 	}
-	
+
 	public void subscribeDataChangeListener(DataChangeListener listener) {
 		dataChangeListeners.add(listener);
 	}
@@ -71,18 +93,16 @@ public class SellerFormController implements Initializable {
 			service.saveOrUpdate(formSeller);
 			notifyDataChangeListeners();
 			Utils.currentStage(event).close();
-		}
-		catch (ValidationException e) {
+		} catch (ValidationException e) {
 			setErrorMessages(e.getErrors());
-		}
-		catch (DbException e) {
+		} catch (DbException e) {
 			Alerts.showAlert("Error saving object", null, e.getMessage(), AlertType.ERROR);
 		}
 	}
-	
+
 	private void notifyDataChangeListeners() {
-		for (DataChangeListener listener : dataChangeListeners) 
-			listener.onDataChanged();	
+		for (DataChangeListener listener : dataChangeListeners)
+			listener.onDataChanged();
 	}
 
 	private Seller getFormData() {
@@ -116,17 +136,26 @@ public class SellerFormController implements Initializable {
 
 	private void initializeNodes() {
 		Constraints.setTextFieldInteger(txtId);
-		Constraints.setTextFieldMaxLength(txtName, 30);
+		Constraints.setTextFieldMaxLength(txtName, 70);
+		Constraints.setTextFieldDouble(txtBaseSalary);
+		Constraints.setTextFieldMaxLength(txtEmail, 60);
+		Utils.formatDatePicker(dpBirthDate, "dd/MM/yyyy");
 	}
-	
+
 	public void updateFormData() {
 		if (formSeller == null) {
 			throw new IllegalStateException("formSeller was set to null");
 		}
 		txtId.setText(String.valueOf(formSeller.getId()));
 		txtName.setText(formSeller.getName());
+		txtEmail.setText(formSeller.getEmail());
+		Locale.setDefault(Locale.US);
+		txtBaseSalary.setText(String.format("%.2f", formSeller.getBaseSalary()));
+		if (formSeller.getBirthDate() != null) {
+			dpBirthDate.setValue(LocalDate.ofInstant(formSeller.getBirthDate().toInstant(), ZoneId.systemDefault()));
+		}
 	}
-	
+
 	private void setErrorMessages(Map<String, String> errors) {
 		Set<String> fields = errors.keySet();
 
@@ -134,5 +163,5 @@ public class SellerFormController implements Initializable {
 			labelErrorName.setText(errors.get("name"));
 		}
 	}
-	
+
 }
